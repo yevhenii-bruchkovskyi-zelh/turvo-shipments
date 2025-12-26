@@ -131,12 +131,12 @@ function parseShipmentDetails(shipmentDetailsJson: string) {
 }
 
 async function main() {
-  const accessToken = await getAccessToken();
+  // const accessToken = await getAccessToken();
   // await saveShipmentsJson(accessToken);
   // await saveShipmentsDetailsJson(accessToken);
 
   // const shipments = parseShipments(readFileSync('1765313105818_shipments.json', 'utf8'));
-  // const shipmentDetails = parseShipmentDetails(readFileSync('1765315245512_shipment-details.json', 'utf8'));
+  const shipmentDetails = parseShipmentDetails(readFileSync('1765315245512_shipment-details.json', 'utf8'));
 
   // console.log(await getShipmentById(accessToken, 1000303632))
   

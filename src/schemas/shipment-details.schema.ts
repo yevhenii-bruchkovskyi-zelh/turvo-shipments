@@ -1,372 +1,268 @@
+// Tested with JSON from sandbox Turvo API (real data validation needed)
 import { z } from 'zod';
 
-// Helper schemas for nested structures
-const KeyValueSchema = z.object({
+// Tracking address schema - only required fields
+const TrackingAddressSchema = z.object({
+  country: z.string(),
+  city: z.object({
+    name: z.string(),
+  }),
+  state: z.object({
+    name: z.string(),
+  }),
+  gps: z.object({
+    coordinates: z.object({
+      lat: z.number(),
+      lon: z.number(),
+    })
+  })
+}).optional();
+
+// Tracking schema
+const TrackingSchema = z.object({
+  address: TrackingAddressSchema,
+});
+
+// Status schema - only required fields
+const StatusSchema = z.object({
+  code: z.object({
+    value: z.string(),
+  }),
+  statusDate: z.object({
+    date: z.string().optional(),
+    timezone: z.string().optional(),
+  }).optional(),
+});
+
+// ModeInfo schema - only required fields
+const ModeInfoSchema = z.object({
+  mode: z.object({
+    key: z.string().optional(),
+    value: z.string(),
+  }).optional(),
+});
+
+// Email schema - only email field
+const EmailSchema = z.object({
+  email: z.string(),
+});
+
+// Phone schema - only number field
+const PhoneSchema = z.object({
+  number: z.string(),
+});
+
+// Contact schema
+const ContactSchema = z.object({
+  email: z.array(EmailSchema).optional(),
+  phone: z.array(PhoneSchema).optional(),
+});
+
+// Costs line item schema - only required fields
+const CostsLineItemSchema = z.object({
+  amount: z.number().optional(),
+  billable: z.boolean().optional(),
+  code: z.object({
+    key: z.string().optional(),
+    value: z.string(),
+  }).optional(),
+  deleted: z.boolean().optional(),
+  id: z.number().optional(),
+  notes: z.string().optional(),
+  price: z.number().optional(),
+  qty: z.number().optional(),
+});
+
+// Costs schema - only required fields
+const CostsSchema = z.object({
+  totalAmount: z.number().optional(),
+  lineItem: z.array(CostsLineItemSchema).optional(),
+  deleted: z.boolean().optional(),
+});
+
+// Customer schema - only required fields
+const CustomerSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+});
+
+// Item dimensions units schema
+const ItemDimensionsUnitsSchema = z.object({
+  id: z.number().optional(),
+  key: z.string(),
+  value: z.string(),
+}).optional();
+
+// Item dimensions schema - only required fields
+const ItemDimensionsSchema = z.object({
+  height: z.number().optional(),
+  length: z.number().optional(),
+  width: z.number().optional(),
+  units: ItemDimensionsUnitsSchema,
+});
+
+// Item freight class schema
+const ItemFreightClassSchema = z.object({
+  key: z.string().optional(),
+  value: z.string(),
+}).optional();
+
+// Item gross weight weight unit schema
+const ItemGrossWeightWeightUnitSchema = z.object({
   key: z.string(),
   value: z.string(),
 });
 
-const DateWithTimezoneSchema = z.object({
-  date: z.string(),
-  timeZone: z.string().optional(),
-  flex: z.number().optional(),
-  hasTime: z.boolean().optional(),
-  timezone: z.string().optional(),
+// Item gross weight schema
+const ItemGrossWeightSchema = z.object({
+  weight: z.union([z.string(), z.number()]),
+  weightUnit: ItemGrossWeightWeightUnitSchema.optional(),
 });
 
-const AppointmentSchema = z.object({
-  date: z.string().nullable().optional(),
+// Item handling unit schema
+const ItemHandlingUnitSchema = z.object({
+  key: z.string().optional(),
+  value: z.string(),
+}).optional();
+
+// Item unit schema
+const ItemUnitSchema = z.object({
+  value: z.string(),
+}).optional();
+
+// Item max/min temp unit schema
+const ItemTempUnitSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+}).optional();
+
+// Item max temp schema
+const ItemMaxTempSchema = z.object({
+  temp: z.number().optional(),
+  tempUnit: ItemTempUnitSchema.optional(),
+}).optional();
+
+// Item min temp schema
+const ItemMinTempSchema = z.object({
+  temp: z.number().optional(),
+  tempUnit: ItemTempUnitSchema.optional(),
+}).optional();
+
+// Customer order item schema - only required fields
+const CustomerOrderItemSchema = z.object({
+  dimensions: ItemDimensionsSchema.optional(),
+  freightClass: ItemFreightClassSchema,
+  grossWeight: ItemGrossWeightSchema.optional(),
+  handlingQty: z.number().nullish().optional(),
+  handlingUnit: ItemHandlingUnitSchema.nullish().optional(),
+  id: z.number(),
+  isHazmat: z.boolean().optional(),
+  itemCategory: z.object({
+    key: z.string().optional(),
+    value: z.string(),
+  }).optional(),
+  itemNumber: z.string().nullish().optional(),
+  maxStackCount: z.number().nullish().optional(),
+  maxTemp: ItemMaxTempSchema,
+  minTemp: ItemMinTempSchema,
+  name: z.string().optional(),
+  qty: z.union([z.string(), z.number()]).transform(data => String(data)).optional(), // number or string --> string
+  stackable: z.boolean().optional(),
+  unit: ItemUnitSchema,
+});
+
+// Route address schema - only required fields
+const RouteAddressSchema = z.object({
+  city: z.string().optional(),
+  country: z.string().optional(),
+  lat: z.number().optional(),
+  line1: z.string().nullish().optional(),
+  line2: z.string().nullish().optional(),
+  lon: z.number().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+}).optional();
+
+// Route appointment schema - only required fields
+const RouteAppointmentSchema = z.object({
+  flex: z.number().optional(),
+  scheduling: z.object({
+    key: z.string().optional(),
+    value: z.string(),
+  }).optional(),
   start: z.string().optional(),
   timeZone: z.string().optional(),
-  timezone: z.string().optional(),
-  flex: z.number().optional(),
-  hasTime: z.boolean().optional(),
-  scheduling: KeyValueSchema.optional(),
-});
+}).optional();
 
-const AppointmentDateSchema = z.object({
-  schedulingType: KeyValueSchema.optional(),
-  appointment: AppointmentSchema.optional(),
-  from: AppointmentSchema.optional(),
-  to: AppointmentSchema.optional(),
-});
-
-const AddressSchema = z.object({
-  id: z.string().optional(),
-  line1: z.string().optional(),
-  line2: z.string().nullable().optional(),
-  line3: z.string().nullable().optional(),
-  city: z.string().or(z.object({ name: z.string() })).optional(),
-  state: z.string().or(z.object({ name: z.string() })).optional(),
-  zip: z.string().nullable().optional(),
-  country: z.union([
-    z.string(),
-    z.object({ name: z.string(), code: z.string().optional() }),
-    z.object({ name: z.string() }),
-  ]).nullable().optional(),
-  countryName: z.string().optional(),
-  countryCode: z.string().optional(),
-  lon: z.number().optional(),
-  lat: z.number().optional(),
-  active: z.boolean().optional(),
-  primary: z.boolean().optional(),
-  gps: z.object({
-    coordinates: z.array(z.number()),
-  }).optional(),
-  type: z.object({
-    id: z.number(),
-    key: z.string(),
-    value: z.string(),
-  }).optional(),
-});
-
-const LocationSchema = z.object({
-  id: z.number(),
+// Route location schema
+const RouteLocationSchema = z.object({
   name: z.string().optional(),
-});
+}).optional();
 
-const UserSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  photo: z.string().optional(),
-  reference: z.number().optional(),
-});
-
-const ContributorSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  contributorUser: UserSchema,
-  title: KeyValueSchema,
-});
-
-const RouteStepSchema = z.object({
-  visitedGeoWayPoints: z.string(),
-  countGeoWayPoints: z.number(),
-  stepsPolyline: z.string(),
-});
-
-const TrackingSchema = z.object({
-  isTrackable: z.boolean(),
-  deleted: z.boolean(),
-  isTracking: z.boolean(),
-  description: z.string(),
-  source: z.string(),
-  frequency: z.number(),
-  routeSteps: RouteStepSchema.optional(),
-});
-
-const MarginSchema = z.object({
-  minPay: z.number().optional(),
-  maxPay: z.number().optional(),
-  totalReceivableAmount: z.number().optional(),
-  totalPayableAmount: z.number().optional(),
-  amount: z.number().optional(),
-  value: z.number().optional(),
-});
-
-const LaneSchema = z.object({
-  start: z.string(),
-  end: z.string(),
-});
-
-const WeightUnitSchema = z.object({
-  key: z.string(),
+// Route services schema
+const RouteServicesSchema = z.array(z.object({
+  key: z.string().optional(),
   value: z.string(),
+})).optional();
+
+// Route stop type schema
+const RouteStopTypeSchema = z.object({
+  key: z.string().optional(),
+  value: z.string(),
+}).optional();
+
+// Route schema - only required fields
+const RouteSchema = z.object({
+  address: RouteAddressSchema,
+  appointment: RouteAppointmentSchema,
   id: z.number().optional(),
-});
-
-const WeightSchema = z.object({
-  weight: z.union([z.string(), z.number()]),
-  weightUnit: WeightUnitSchema.optional(),
-});
-
-const DimensionsSchema = z.object({
-  height: z.number().optional(),
-  width: z.number().optional(),
-  length: z.number().optional(),
-  units: z.object({
-    key: z.string(),
-    value: z.string(),
-    id: z.number().optional(),
-  }).optional(),
-});
-
-const ShipLocationSchema = z.object({
-  id: z.number(),
-  globalShipLocationId: z.number().optional(),
-  name: z.string().optional(),
-  globalShipLocationSourceId: z.string().nullable().optional(),
-});
-
-const OrderItemSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  dimensions: DimensionsSchema.optional(),
-  qty: z.union([z.string(), z.number()]).optional(),
-  unit: KeyValueSchema.optional(),
-  name: z.string().optional(),
-  pickupLocation: z.array(ShipLocationSchema).optional(),
-  deliveryLocation: z.array(ShipLocationSchema).optional(),
-  netWeight: WeightSchema.optional(),
-  weight: z.union([z.string(), z.number()]).optional(),
-  grossWeight: WeightSchema.optional(),
-  freightClass: KeyValueSchema.optional(),
-});
-
-const RouteStopSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  globalShipLocationSourceId: z.string().optional(),
-  globalShipLocationId: z.number().optional(),
-  stopType: KeyValueSchema.optional(),
-  location: LocationSchema.optional(),
-  address: AddressSchema.optional(),
-  extension: z.string().optional(),
-  phone: z.string().optional(),
-  sequence: z.number().optional(),
-  state: z.string().optional(),
-  appointment: z.object({
-    start: z.string().optional(),
-    timeZone: z.string().optional(),
-    flex: z.number().optional(),
-    hasTime: z.boolean().optional(),
-    scheduling: KeyValueSchema.optional(),
-  }).optional(),
-  services: z.array(KeyValueSchema).optional(),
-  poNumbers: z.array(z.string()).optional(),
+  location: RouteLocationSchema,
   notes: z.string().optional(),
+  sequence: z.number().optional(),
+  services: RouteServicesSchema,
+  stopType: RouteStopTypeSchema,
 });
 
-const CostsSchema = z.object({
-  subTotal: z.number().optional(),
-  totalAmount: z.number().optional(),
-  deleted: z.boolean().optional(),
-});
-
-const BillToSchema = z.object({
-  id: z.string(),
-  billTo: z.string(),
-  creditLimit: z.number().optional(),
-  thirdParty: z.boolean().optional(),
-  invoiceProfile: z.unknown().nullable().optional(),
-  invoiceConsolidationRule: z.unknown().nullable().optional(),
-  address: AddressSchema.optional(),
-  emails: z.array(z.object({
-    email: z.string(),
-    primary: z.boolean(),
-  })).nullable().optional(),
-  phone: z.string().nullable().optional(),
-  billingInstructions: z.string().nullable().optional(),
-  contact: UserSchema.nullable().optional(),
-});
-
-const FreightTermsSchema = z.object({
-  billTo: BillToSchema.optional(),
-});
-
+// Customer order schema - only required fields
 const CustomerOrderSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  customer: z.object({
-    id: z.number(),
-    name: z.string(),
-    owner: UserSchema.optional(),
-  }),
-  items: z.array(OrderItemSchema).optional(),
-  route: z.array(RouteStopSchema).optional(),
+  contacts: z.array(ContactSchema).optional(),
   costs: CostsSchema.optional(),
-  freightTerms: FreightTermsSchema.optional(),
+  customer: CustomerSchema,
+  items: z.array(CustomerOrderItemSchema).optional(),
+  route: z.array(RouteSchema).optional(),
+  totalMiles: z.number().optional(),
 });
 
-const CarrierOrderSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  carrier: z.object({
-    id: z.number(),
-    name: z.string(),
-    owner: UserSchema.optional(),
-  }),
-  costs: CostsSchema.optional(),
-});
-
-const GroupSchema = z.object({
+// Carrier schema - only required fields
+const CarrierSchema = z.object({
   id: z.number(),
   name: z.string(),
 });
 
-const FragmentDistanceSchema = z.object({
-  value: z.number().optional(),
-});
-
-const TimeWithUnitsSchema = z.object({
-  value: z.number(),
-  units: KeyValueSchema,
-});
-
-const CurrencySchema = z.object({
-  key: z.string(),
-  value: z.string(),
-});
-
-const TotalSegmentValueSchema = z.object({
-  value: z.number(),
-  sync: z.boolean().optional(),
-  currency: CurrencySchema.optional(),
-});
-
-const ModeInfoSchema = z.object({
-  id: z.number(),
-  segmentId: z.string().optional(),
-  totalSegmentValue: TotalSegmentValueSchema.optional(),
-  mode: KeyValueSchema.optional(),
-  serviceType: KeyValueSchema.optional(),
-  deleted: z.boolean(),
-});
-
-const GlobalRouteStopSchema = z.object({
-  appointmentConfirmation: z.boolean().optional(),
-  name: z.string().optional(),
-  id: z.number(),
-  globalShipLocationSourceId: z.string().optional(),
-  schedulingType: KeyValueSchema.optional(),
-  stopType: KeyValueSchema.optional(),
-  timezone: z.string().optional(),
-  location: LocationSchema.optional(),
-  address: AddressSchema.optional(),
-  segmentId: z.string().optional(),
-  segmentSequence: z.number().optional(),
-  sequence: z.number().optional(),
-  state: z.string().optional(),
-  appointment: AppointmentSchema.optional(),
-  services: z.array(KeyValueSchema).optional(),
-  poNumbers: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-  customerOrder: z.array(z.object({
-    customerId: z.number(),
-    id: z.number(),
-    deleted: z.boolean(),
-  })).optional(),
-  carrierOrder: z.array(z.object({
-    carrierId: z.number(),
-    id: z.number(),
-    deleted: z.boolean(),
-  })).optional(),
-  deleted: z.boolean().optional(),
-  fragmentDistance: FragmentDistanceSchema.optional(),
-  isShipmentDwellTimeEdited: z.boolean().optional(),
-  expectedDwellTime: TimeWithUnitsSchema.optional(),
-  layoverTime: TimeWithUnitsSchema.optional(),
-  originalAppointmentDate: AppointmentDateSchema.optional(),
-  plannedDate: AppointmentDateSchema.optional(),
-  plannedRequestedDate: AppointmentDateSchema.optional(),
-  transportation: z.object({
-    mode: KeyValueSchema.optional(),
-    serviceType: KeyValueSchema.optional(),
+// Carrier order schema - only required fields
+const CarrierOrderSchema = z.object({
+  carrier: CarrierSchema,
+  contacts: z.array(ContactSchema).optional(),
+  costs: z.object({
+    totalAmount: z.number().optional(),
   }).optional(),
 });
 
-const RoutingGuideSchema = z.object({
-  segmentId: z.string(),
-});
-
-const StatusHistorySchema = z.object({
-  lastUpdatedOn: z.string(),
-  code: KeyValueSchema,
-  fragmentId: z.string(),
-});
-
-const EquipmentSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-  type: KeyValueSchema,
-});
-
-const TagsSchema = z.object({
-  value: z.array(z.string()),
+// Services schema
+const ServiceSchema = z.object({
+  key: z.string().optional(),
+  value: z.string(),
 });
 
 export const ShipmentDetailsSchema = z.object({
-  id: z.number(),
   customId: z.string(),
-  ltlShipment: z.boolean(),
-  phase: KeyValueSchema,
-  servicesPartial: z.boolean().optional(),
-  netCustomerCosts: z.number(),
-  netCarrierCosts: z.number(),
-  netRevenue: z.number(),
-  custom_attributes: z.record(z.string(), z.unknown()).optional(),
-  startDate: DateWithTimezoneSchema,
-  endDate: DateWithTimezoneSchema.extend({
-    date: z.string().nullable().optional(),
-    flex: z.number().optional(),
-  }).optional(),
-  transportation: z.object({
-    mode: KeyValueSchema,
-    serviceType: KeyValueSchema,
-  }),
-  status: z.object({
-    code: KeyValueSchema,
-    notes: z.string().optional(),
-    description: z.string().optional(),
-    category: z.string().optional(),
-  }),
+  quoteId: z.string().optional(),
+  services: z.array(ServiceSchema).nullish().optional(),
+  status: StatusSchema,
   tracking: TrackingSchema,
-  margin: MarginSchema.optional(),
-  contributors: z.array(ContributorSchema).optional(),
-  lane: LaneSchema,
-  globalRoute: z.array(GlobalRouteStopSchema).optional(),
-  groups: z.array(GroupSchema),
+  modeInfo: z.array(ModeInfoSchema).optional(),
   customerOrder: z.array(CustomerOrderSchema).optional(),
   carrierOrder: z.array(CarrierOrderSchema).optional(),
-  modeInfo: z.array(ModeInfoSchema).optional(),
-  routingGuide: z.array(RoutingGuideSchema).optional(),
-  statusHistory: z.array(StatusHistorySchema).optional(),
-  equipment: z.array(EquipmentSchema).optional(),
-  tags: TagsSchema.optional(),
-  services: z.array(z.unknown()).nullable().optional(),
-  servicesNote: z.string().optional(),
-  quoteId: z.string().optional(),
-  use_routing_guide: z.boolean().optional(),
 });
 
 export type ShipmentDetails = z.infer<typeof ShipmentDetailsSchema>;
