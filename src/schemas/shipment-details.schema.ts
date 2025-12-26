@@ -1,4 +1,6 @@
 // Tested with JSON from sandbox Turvo API (real data validation needed)
+// .loose() is used to allow extra fields that are not defined in the schema
+
 import { z } from 'zod';
 
 // Tracking address schema - only required fields
@@ -6,57 +8,57 @@ const TrackingAddressSchema = z.object({
   country: z.string(),
   city: z.object({
     name: z.string(),
-  }),
+  }).loose(),
   state: z.object({
     name: z.string(),
-  }),
+  }).loose(),
   gps: z.object({
     coordinates: z.object({
       lat: z.number(),
       lon: z.number(),
-    })
-  })
-}).optional();
+    }).loose()
+  }).loose()
+}).loose().optional();
 
 // Tracking schema
 const TrackingSchema = z.object({
   address: TrackingAddressSchema,
-});
+}).loose();
 
 // Status schema - only required fields
 const StatusSchema = z.object({
   code: z.object({
     value: z.string(),
-  }),
+  }).loose(),
   statusDate: z.object({
     date: z.string().optional(),
     timezone: z.string().optional(),
-  }).optional(),
-});
+  }).loose().optional(),
+}).loose();
 
 // ModeInfo schema - only required fields
 const ModeInfoSchema = z.object({
   mode: z.object({
     key: z.string().optional(),
     value: z.string(),
-  }).optional(),
-});
+  }).loose().optional(),
+}).loose();
 
 // Email schema - only email field
 const EmailSchema = z.object({
   email: z.string(),
-});
+}).loose();
 
 // Phone schema - only number field
 const PhoneSchema = z.object({
   number: z.string(),
-});
+}).loose();
 
 // Contact schema
 const ContactSchema = z.object({
   email: z.array(EmailSchema).optional(),
   phone: z.array(PhoneSchema).optional(),
-});
+}).loose();
 
 // Costs line item schema - only required fields
 const CostsLineItemSchema = z.object({
@@ -65,33 +67,33 @@ const CostsLineItemSchema = z.object({
   code: z.object({
     key: z.string().optional(),
     value: z.string(),
-  }).optional(),
+  }).loose().optional(),
   deleted: z.boolean().optional(),
   id: z.number().optional(),
   notes: z.string().optional(),
   price: z.number().optional(),
   qty: z.number().optional(),
-});
+}).loose();
 
 // Costs schema - only required fields
 const CostsSchema = z.object({
   totalAmount: z.number().optional(),
   lineItem: z.array(CostsLineItemSchema).optional(),
   deleted: z.boolean().optional(),
-});
+}).loose();
 
 // Customer schema - only required fields
 const CustomerSchema = z.object({
   id: z.number(),
   name: z.string(),
-});
+}).loose();
 
 // Item dimensions units schema
 const ItemDimensionsUnitsSchema = z.object({
   id: z.number().optional(),
   key: z.string(),
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Item dimensions schema - only required fields
 const ItemDimensionsSchema = z.object({
@@ -99,54 +101,54 @@ const ItemDimensionsSchema = z.object({
   length: z.number().optional(),
   width: z.number().optional(),
   units: ItemDimensionsUnitsSchema,
-});
+}).loose();
 
 // Item freight class schema
 const ItemFreightClassSchema = z.object({
   key: z.string().optional(),
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Item gross weight weight unit schema
 const ItemGrossWeightWeightUnitSchema = z.object({
   key: z.string(),
   value: z.string(),
-});
+}).loose();
 
 // Item gross weight schema
 const ItemGrossWeightSchema = z.object({
   weight: z.union([z.string(), z.number()]),
   weightUnit: ItemGrossWeightWeightUnitSchema.optional(),
-});
+}).loose();
 
 // Item handling unit schema
 const ItemHandlingUnitSchema = z.object({
   key: z.string().optional(),
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Item unit schema
 const ItemUnitSchema = z.object({
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Item max/min temp unit schema
 const ItemTempUnitSchema = z.object({
   key: z.string(),
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Item max temp schema
 const ItemMaxTempSchema = z.object({
   temp: z.number().optional(),
   tempUnit: ItemTempUnitSchema.optional(),
-}).optional();
+}).loose().optional();
 
 // Item min temp schema
 const ItemMinTempSchema = z.object({
   temp: z.number().optional(),
   tempUnit: ItemTempUnitSchema.optional(),
-}).optional();
+}).loose().optional();
 
 // Customer order item schema - only required fields
 const CustomerOrderItemSchema = z.object({
@@ -160,7 +162,7 @@ const CustomerOrderItemSchema = z.object({
   itemCategory: z.object({
     key: z.string().optional(),
     value: z.string(),
-  }).optional(),
+  }).loose().optional(),
   itemNumber: z.string().nullish().optional(),
   maxStackCount: z.number().nullish().optional(),
   maxTemp: ItemMaxTempSchema,
@@ -169,7 +171,7 @@ const CustomerOrderItemSchema = z.object({
   qty: z.union([z.string(), z.number()]).transform(data => String(data)).optional(), // number or string --> string
   stackable: z.boolean().optional(),
   unit: ItemUnitSchema,
-});
+}).loose();
 
 // Route address schema - only required fields
 const RouteAddressSchema = z.object({
@@ -181,7 +183,7 @@ const RouteAddressSchema = z.object({
   lon: z.number().optional(),
   state: z.string().optional(),
   zip: z.string().optional(),
-}).optional();
+}).loose().optional();
 
 // Route appointment schema - only required fields
 const RouteAppointmentSchema = z.object({
@@ -189,27 +191,27 @@ const RouteAppointmentSchema = z.object({
   scheduling: z.object({
     key: z.string().optional(),
     value: z.string(),
-  }).optional(),
+  }).loose().optional(),
   start: z.string().optional(),
   timeZone: z.string().optional(),
-}).optional();
+}).loose().optional();
 
 // Route location schema
 const RouteLocationSchema = z.object({
   name: z.string().optional(),
-}).optional();
+}).loose().optional();
 
 // Route services schema
 const RouteServicesSchema = z.array(z.object({
   key: z.string().optional(),
   value: z.string(),
-})).optional();
+}).loose()).optional();
 
 // Route stop type schema
 const RouteStopTypeSchema = z.object({
   key: z.string().optional(),
   value: z.string(),
-}).optional();
+}).loose().optional();
 
 // Route schema - only required fields
 const RouteSchema = z.object({
@@ -221,7 +223,7 @@ const RouteSchema = z.object({
   sequence: z.number().optional(),
   services: RouteServicesSchema,
   stopType: RouteStopTypeSchema,
-});
+}).loose();
 
 // Customer order schema - only required fields
 const CustomerOrderSchema = z.object({
@@ -231,13 +233,13 @@ const CustomerOrderSchema = z.object({
   items: z.array(CustomerOrderItemSchema).optional(),
   route: z.array(RouteSchema).optional(),
   totalMiles: z.number().optional(),
-});
+}).loose();
 
 // Carrier schema - only required fields
 const CarrierSchema = z.object({
   id: z.number(),
   name: z.string(),
-});
+}).loose();
 
 // Carrier order schema - only required fields
 const CarrierOrderSchema = z.object({
@@ -245,14 +247,14 @@ const CarrierOrderSchema = z.object({
   contacts: z.array(ContactSchema).optional(),
   costs: z.object({
     totalAmount: z.number().optional(),
-  }).optional(),
-});
+  }).loose().optional(),
+}).loose();
 
 // Services schema
 const ServiceSchema = z.object({
   key: z.string().optional(),
   value: z.string(),
-});
+}).loose();
 
 export const ShipmentDetailsSchema = z.object({
   customId: z.string(),
@@ -263,6 +265,6 @@ export const ShipmentDetailsSchema = z.object({
   modeInfo: z.array(ModeInfoSchema).optional(),
   customerOrder: z.array(CustomerOrderSchema).optional(),
   carrierOrder: z.array(CarrierOrderSchema).optional(),
-});
+}).loose();
 
 export type ShipmentDetails = z.infer<typeof ShipmentDetailsSchema>;
